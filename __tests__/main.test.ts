@@ -6,75 +6,38 @@
  * variables following the pattern `INPUT_<INPUT_NAME>`.
  */
 
+import * as os from 'node:os'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { afterEach, beforeEach } from 'node:test'
+
 import * as core from '@actions/core'
 import * as main from '../src/main'
 
 // Mock the GitHub Actions core library
-const debugMock = jest.spyOn(core, 'debug')
-const getInputMock = jest.spyOn(core, 'getInput')
 const setFailedMock = jest.spyOn(core, 'setFailed')
-const setOutputMock = jest.spyOn(core, 'setOutput')
+const addPathMock = jest.spyOn(core, 'addPath')
 
 // Mock the action's main function
 const runMock = jest.spyOn(main, 'run')
 
-// Other utilities
-const timeRegex = /^\d{2}:\d{2}:\d{2}/
+const mktemp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'setup-age-action-'))
 
 describe('action', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
-  it('sets the time output', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation((name: string): string => {
-      switch (name) {
-        case 'milliseconds':
-          return '500'
-        default:
-          return ''
-      }
-    })
+  it('sets up age on the path', async () => {
+    process.env.INPUT_VERSION = 'v1.1.1'
+    process.env.RUNNER_TEMP = mktemp()
+    process.env.RUNNER_TOOL_CACHE = mktemp()
 
     await main.run()
+
     expect(runMock).toHaveReturned()
-
-    // Verify that all of the core library functions were called correctly
-    expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
-    expect(debugMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringMatching(timeRegex)
-    )
-    expect(debugMock).toHaveBeenNthCalledWith(
-      3,
-      expect.stringMatching(timeRegex)
-    )
-    expect(setOutputMock).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      expect.stringMatching(timeRegex)
-    )
-  })
-
-  it('sets a failed status', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation((name: string): string => {
-      switch (name) {
-        case 'milliseconds':
-          return 'this is not a number'
-        default:
-          return ''
-      }
-    })
-
-    await main.run()
-    expect(runMock).toHaveReturned()
-
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds not a number'
-    )
+    expect(setFailedMock).toBeCalledTimes(0)
+    expect(addPathMock).toBeCalledTimes(1)
+    expect(addPathMock.mock.lastCall![0]).toMatch(/age\/1\.1\.1\/x64$/)
   })
 })
