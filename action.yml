@@ -4,8 +4,8 @@ author: 'RobotsAndPencils'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'version'
+  version:
+    description: 'the version of age to install'
     required: true
     default: 'v1.1.1'
 
