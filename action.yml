@@ -1,18 +1,13 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'setup-age-action'
+description: 'Install age and add it to the path'
+author: 'RobotsAndPencils'
 
 # Define your inputs here.
 inputs:
   milliseconds:
-    description: 'Your input description here'
+    description: 'version'
     required: true
-    default: '1000'
-
-# Define your outputs here.
-outputs:
-  time:
-    description: 'Your output description here'
+    default: 'v1.1.1'
 
 runs:
   using: node20
