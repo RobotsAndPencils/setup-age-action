@@ -6616,10 +6616,12 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const tc = __importStar(__nccwpck_require__(7784));
+const path = __importStar(__nccwpck_require__(9411));
 const node_os_1 = __nccwpck_require__(612);
 const node_process_1 = __nccwpck_require__(7742);
 const REPO = 'age';
 const OWNER = 'FiloSottile';
+const TOOL = 'age';
 async function run() {
     try {
         const args = getArgs();
@@ -6628,13 +6630,11 @@ async function run() {
             platform: getReleasePlatform((0, node_os_1.platform)()),
             version: args.version
         };
-        core.info(`downloading age ${downloadInfo.version} for ${downloadInfo.platform}-${downloadInfo.arch}`);
-        const releaseUrl = getReleaseUrl(downloadInfo);
-        const ageArchivePath = await tc.downloadTool(releaseUrl);
-        const agePath = await tc.extractTar(ageArchivePath);
-        const cachedAgePath = await tc.cacheDir(agePath, 'age', downloadInfo.version);
-        core.addPath(cachedAgePath);
-        core.info('age downloaded and added to path');
+        let toolPath = getCachedPath(downloadInfo);
+        if (!toolPath) {
+            toolPath = await downloadAge(downloadInfo);
+        }
+        core.addPath(toolPath);
     }
     catch (error) {
         // Fail the workflow run if an error occurs
@@ -6647,6 +6647,18 @@ async function run() {
     }
 }
 exports.run = run;
+function getCachedPath(info) {
+    return tc.find(TOOL, info.version);
+}
+async function downloadAge(info) {
+    core.info(`downloading age ${info.version} for ${info.platform}-${info.arch}`);
+    const releaseUrl = getReleaseUrl(info);
+    const ageArchivePath = await tc.downloadTool(releaseUrl);
+    const ageRootPath = await tc.extractTar(ageArchivePath);
+    const ageBinPath = path.join(ageRootPath, 'age');
+    const cachedAgePath = await tc.cacheDir(ageBinPath, TOOL, info.version);
+    return cachedAgePath;
+}
 function getReleasePlatform(runnerPlatform) {
     switch (runnerPlatform) {
         case 'linux':
@@ -6753,6 +6765,14 @@ module.exports = require("net");
 
 "use strict";
 module.exports = require("node:os");
+
+/***/ }),
+
+/***/ 9411:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:path");
 
 /***/ }),
 

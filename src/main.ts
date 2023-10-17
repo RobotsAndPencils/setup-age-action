@@ -1,11 +1,13 @@
 import * as core from '@actions/core'
 import * as tc from '@actions/tool-cache'
 
+import * as path from 'node:path'
 import { platform } from 'node:os'
 import { arch } from 'node:process'
 
 const REPO = 'age'
 const OWNER = 'FiloSottile'
+const TOOL = 'age'
 
 export async function run(): Promise<void> {
   try {
@@ -17,25 +19,34 @@ export async function run(): Promise<void> {
       version: args.version
     }
 
-    core.info(
-      `downloading age ${downloadInfo.version} for ${downloadInfo.platform}-${downloadInfo.arch}`
-    )
-    const releaseUrl = getReleaseUrl(downloadInfo)
-    const ageArchivePath = await tc.downloadTool(releaseUrl)
-    const agePath = await tc.extractTar(ageArchivePath)
-    const cachedAgePath = await tc.cacheDir(
-      agePath,
-      'age',
-      downloadInfo.version
-    )
-    core.addPath(cachedAgePath)
-    core.info('age downloaded and added to path')
+    let toolPath = getCachedPath(downloadInfo)
+
+    if (!toolPath) {
+      toolPath = await downloadAge(downloadInfo)
+    }
+
+    core.addPath(toolPath)
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
     else if (typeof error === 'string') core.setFailed(error)
     else throw error
   }
+}
+
+function getCachedPath(info: DownloadInfo) {
+  return tc.find(TOOL, info.version)
+}
+
+async function downloadAge(info: DownloadInfo) {
+  core.info(`downloading age ${info.version} for ${info.platform}-${info.arch}`)
+  const releaseUrl = getReleaseUrl(info)
+  const ageArchivePath = await tc.downloadTool(releaseUrl)
+  const ageRootPath = await tc.extractTar(ageArchivePath)
+  const ageBinPath = path.join(ageRootPath, 'age')
+  const cachedAgePath = await tc.cacheDir(ageBinPath, TOOL, info.version)
+
+  return cachedAgePath
 }
 
 function getReleasePlatform(runnerPlatform: NodeJS.Platform) {
