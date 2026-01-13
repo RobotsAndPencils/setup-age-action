@@ -34,11 +34,11 @@ export async function run(): Promise<void> {
   }
 }
 
-function getCachedPath(info: DownloadInfo) {
+function getCachedPath(info: DownloadInfo): string {
   return tc.find(TOOL, info.version)
 }
 
-async function downloadAge(info: DownloadInfo) {
+async function downloadAge(info: DownloadInfo): Promise<string> {
   core.info(`downloading age ${info.version} for ${info.platform}-${info.arch}`)
   const releaseUrl = getReleaseUrl(info)
   const ageArchivePath = await tc.downloadTool(releaseUrl)
@@ -49,7 +49,7 @@ async function downloadAge(info: DownloadInfo) {
   return cachedAgePath
 }
 
-function getReleasePlatform(runnerPlatform: NodeJS.Platform) {
+function getReleasePlatform(runnerPlatform: NodeJS.Platform): string {
   switch (runnerPlatform) {
     case 'linux':
     case 'darwin':
@@ -60,7 +60,7 @@ function getReleasePlatform(runnerPlatform: NodeJS.Platform) {
   }
 }
 
-function getReleaseArch(runnerArch: NodeJS.Architecture) {
+function getReleaseArch(runnerArch: NodeJS.Architecture): string {
   switch (runnerArch) {
     case 'arm':
     case 'arm64':
@@ -80,11 +80,11 @@ interface DownloadInfo {
   version: string
 }
 
-function getReleaseUrl(info: DownloadInfo) {
+function getReleaseUrl(info: DownloadInfo): string {
   return `https://github.com/${OWNER}/${REPO}/releases/download/${info.version}/age-${info.version}-${info.platform}-${info.arch}.tar.gz`
 }
 
-function getArgs() {
+function getArgs(): { version: string } {
   const version = core.getInput('version')
 
   if (!version) {
